@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Linq;
@@ -79,13 +80,21 @@ namespace SvgToXaml
             // check size
             XAttribute sizeAttrib = svgRootNode.Attributes().ToList().FirstOrDefault(a => a.Name == "viewBox");
             string size = (sizeAttrib != null) ? sizeAttrib.Value.Split(' ').ElementAtOrDefault(3) : null;
+
+            //check color
+            XAttribute styleAttrib = svgRootNode.Attributes().ToList().FirstOrDefault(a => a.Name == "style");
+            int fillStartIndex = styleAttrib.Value.IndexOf("fill:") + 5 ;
+            int searchFinishIndex = styleAttrib.Value.IndexOf(";", fillStartIndex );
+            string fillAttributte = styleAttrib.Value.Substring(fillStartIndex , searchFinishIndex - fillStartIndex).Trim();
+            string color = DetermineFillString(fillAttributte);
+
             //path
             string pathToAdd = svgRootNode.Elements().FirstOrDefault(d => d.Name.LocalName == "path")?.Attributes().FirstOrDefault(a => a.Name.LocalName == "d")?.Value;
             if (!string.IsNullOrEmpty(pathToAdd))
             {
                 try
                 {
-                    XDocument xamlDoc = ComposeIcon(pathToAdd, size);
+                    XDocument xamlDoc = ComposeIcon(pathToAdd, color, size);
                     xamlDoc.Save(xamlFilename);
                     string percentString = $"{ percent.ToString("N0") }%";
                     percentString = percentString.PadLeft(4);
@@ -103,28 +112,24 @@ namespace SvgToXaml
             }
         }
 
-        private static XDocument ComposeIcon(string pathToAdd, string size = null)
+        private static XDocument ComposeIcon(string pathToAdd, string color, string size = null)
         {
+            //double check for empty
+            color = !string.IsNullOrEmpty(color) ? color : "White";
+
             string iconSize = size ?? "171";
             XNamespace ns = "http://schemas.microsoft.com/winfx/2006/xaml/presentation";
-            XNamespace nsX = "http://schemas.microsoft.com/winfx/2006/xaml";
-            XNamespace nsD = "http://schemas.microsoft.com/expression/blend/2008";
-            XNamespace nsMC = "http://schemas.openxmlformats.org/markup-compatibility/2006";
-
 
             XDocument xmlIcon = new XDocument
             (
-                new XElement(ns + "Viewbox" , new XAttribute(XNamespace.Xmlns + "x", nsX),
-                                              new XAttribute(XNamespace.Xmlns + "d", nsD),
-                                              new XAttribute(XNamespace.Xmlns + "mc", nsMC),
-                                              new XAttribute(nsMC + "Ignorable","d"),
+                new XElement(ns + "Viewbox" , 
                                               new XAttribute("Height",iconSize),
                                               new XAttribute("Width", iconSize),
-                            new XElement(ns + "Grid", new XAttribute(nsX + "Name", "Layer_1"),
+                            new XElement(ns + "Canvas", 
                                                       new XAttribute("Height", iconSize),
                                                       new XAttribute("Width", iconSize),
-                                        new XElement(ns + "Path", new XAttribute("Fill", "White"),
-                                                                  new XAttribute("Stretch", "Uniform"),
+                                        new XElement(ns + "Path", 
+                                                                  new XAttribute("Fill", color),                                                                  
                                                                   new XAttribute("Data", pathToAdd)
                                                     )
                                         )
@@ -132,5 +137,33 @@ namespace SvgToXaml
             );
             return xmlIcon;
         }
+
+
+
+        private static string DetermineFillString(string colorString)
+        {
+            Regex regHEX = new Regex("^#([0-9a-fA-F]{2}){3}$");
+            Match match = regHEX.Match(colorString);
+            if (match.Success)
+            {
+                return colorString;
+            }
+            else
+            {
+                Regex regRGB = new Regex(@"rgb\([ ]*(?<r>[0-9]{1,3})[ ]*,[ ]*(?<g>[0-9]{1,3})[ ]*,[ ]*(?<b>[0-9]{1,3})[ ]*\)");
+                match = regRGB.Match(colorString);
+                if (match.Success)
+                {
+                    return "#" + Int32.Parse(match.Groups["r"].Value).ToString("X2") +
+                                 Int32.Parse(match.Groups["g"].Value).ToString("X2") +
+                                 Int32.Parse(match.Groups["b"].Value).ToString("X2");
+
+                }
+            }
+            //default for white
+            return "White"; 
+        }
+
+        
     }
 }
