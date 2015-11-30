@@ -1,13 +1,17 @@
 # Svg-To-Xaml-converter
 A console app  to convert SVG simplified icons to XAML format
 
-Copy the exe file to the folder where the svg files are located
 
-Type `SvgToXaml /help` for usage help
+## How to use
+Copy the exe file to the folder where the svg files are located.
+You can convert a number of SVG files or all the SVG files in a folder.
 
-Type `SvgToXaml filename1.svg [filename2.svg]... [filenameN.svg]` to convert individual icons
 
-Type `SvgToXaml /all` to convert all svg icons in current folder
+At the command prompt type `SvgToXaml filename1.svg [filename2.svg]... [filenameN.svg]` to convert individual icons.
+
+At the command prompt type `SvgToXaml /all` to convert all svg icons in current folder.
+
+At the command prompt type `SvgToXaml /help` for usage help.
 
 **Notes:** 
 * Only one path allowed in svg
