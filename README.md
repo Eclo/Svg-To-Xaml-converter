@@ -15,6 +15,9 @@ At the command prompt type `SvgToXaml /help` for usage help.
 
 **Notes:** 
 * Only one path allowed in svg
+* Color is allowed only as a svg fill attribute of the following formats: 
+  * `style="fill: #xxxxxx;"` or 
+  * `style="fill: rgb(xxx, xxx, xxx);"`
 * **XAML FILES WILL BE OVERWRITEN**
 
 
